@@ -1,0 +1,60 @@
+#include <DHT.h>
+#include <DHT_U.h>
+#include <ESP8266WiFi.h>  
+#include <WiFiClient.h>  
+#include <ThingSpeak.h> 
+#include <Adafruit_Sensor.h>
+#include "DHT.h"      // including the library of DHT11 temperature and humidity sensor
+const char* ssid = "<wifi-name>";  
+const char* password = "<password>";  
+WiFiClient client;  
+unsigned long myChannelNumber = 12345; //write thingsspeak channel number  
+const char * myWriteAPIKey = "";  //write your thingspeak api key
+uint8_t temperature, humidity, h=0, t=0, m=0;
+DHT dht2(2, DHT11);
+const int sensor_pin = A0;  /* Connect Soil moisture analog sensor pin to A0 of NodeMCU */
+
+void setup() {
+  Serial.begin(9600); /* Define baud rate for serial communication */
+  Serial.println();  
+  Serial.println();  
+  Serial.print("Connecting to ");  
+  Serial.println(ssid);  
+  WiFi.begin(ssid, password);  
+  while (WiFi.status() != WL_CONNECTED)  
+  {  
+   delay(500);  
+   Serial.print(".");  
+  }  
+  Serial.println("");  
+  Serial.println("WiFi connected");  
+  // Print the IP address  
+  Serial.println(WiFi.localIP());  
+  ThingSpeak.begin(client); 
+}
+
+void loop() {
+ // static boolean data_state = false;  
+  t = dht2.readTemperature();
+  h = dht2.readHumidity();
+  Serial.println("temperature = ");
+  Serial.println((dht2.readTemperature()));
+  Serial.println("Current humidity = ");
+  Serial.println((dht2.readHumidity()));
+  delay(800);
+
+  float moisture_percentage;
+  moisture_percentage = ( 100.00 - ( (analogRead(sensor_pin)/1023.00) * 100.00 ) );
+  Serial.print("Soil Moisture(in Percentage) = ");
+  Serial.print(moisture_percentage);
+  Serial.println("%");
+  if(moisture_percentage <=10){
+    Serial.print("Moisture level below normal. SWITCH ON WATER PUMP \n");
+      }
+ ThingSpeak.writeField(myChannelNumber, 1, t, myWriteAPIKey); 
+ ThingSpeak.writeField(myChannelNumber, 2, h, myWriteAPIKey); 
+ ThingSpeak.writeField(myChannelNumber, 3, moisture_percentage , myWriteAPIKey); 
+  delay(30000); // ThingSpeak will only accept updates every 15 seconds.  
+ }  
+    
+
